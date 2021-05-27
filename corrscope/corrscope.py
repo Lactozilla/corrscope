@@ -49,6 +49,8 @@ class Config(
 
     fps: int
 
+    background_image: str = ""
+
     trigger_ms: int = with_units("ms")
     render_ms: int = with_units("ms")
 
@@ -248,6 +250,8 @@ class CorrScope:
         renderer = self._load_renderer()
         self.renderer = renderer  # only used for unit tests
 
+        if self.cfg.background_image:
+            renderer.set_background(self.cfg.background_image)
         renderer.add_labels([channel.label for channel in self.channels])
 
         # For debugging only

@@ -64,6 +64,7 @@ if mpl_config_dir in os.environ:
 # matplotlib.use() only affects pyplot. We don't use pyplot.
 import matplotlib
 import matplotlib.colors
+import matplotlib.image as mpimg
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 
@@ -129,6 +130,15 @@ class LabelPosition(TypedEnumDump):
     RightBottom = (LabelX.Right, LabelY.Bottom)
     RightTop = (LabelX.Right, LabelY.Top)
 
+class BackgroundAspectRatio(TypedEnumDump):
+    Automatic = 'auto'
+    Equal = 'equal'
+
+class BackgroundInterpolation(TypedEnumDump):
+    Nearest = 'nearest'
+    Bilinear = 'bilinear'
+    Bicubic = 'bicubic'
+
 
 class Font(DumpableAttrs, always_dump="*"):
     # Font file selection
@@ -158,6 +168,9 @@ class RendererConfig(
         return round(self.height / self.res_divisor)
 
     bg_color: str = "#000000"
+    bg_image_opacity: float = 0.5
+    bg_image_aspect: BackgroundAspectRatio = BackgroundAspectRatio.Equal
+    bg_image_interpolation: BackgroundInterpolation = BackgroundInterpolation.Nearest
     init_line_color: str = default_color()
 
     grid_color: Optional[str] = None
@@ -317,6 +330,10 @@ class _RendererBackend(ABC):
 
     @abstractmethod
     def add_labels(self, labels: List[str]) -> Any:
+        ...
+
+    @abstractmethod
+    def set_background(self, path: str) -> None:
         ...
 
     # Primarily used by RendererFrontend, not outside world.
@@ -704,6 +721,44 @@ class AbstractMatplotlibRenderer(_RendererBackend, ABC):
 
         self._save_background()
         return out
+
+    # Set background image
+    def set_background(self, path: str) -> None:
+        if not self.cfg.bg_image_opacity > 0:
+            return
+
+        ax = self._fig.add_axes([0, 0, 1, 1])
+
+        cfg_aspect = self.cfg.bg_image_aspect
+        cfg_interp = self.cfg.bg_image_interpolation
+
+        aspect = None
+        if cfg_aspect is BackgroundAspectRatio.Automatic:
+            aspect = 'auto'
+        elif cfg_aspect is BackgroundAspectRatio.Equal:
+            aspect = 'equal'
+
+        interpolation = None
+        if cfg_interp is BackgroundInterpolation.Nearest:
+            interpolation = 'nearest'
+        elif cfg_interp is BackgroundInterpolation.Bilinear:
+            interpolation = 'bilinear'
+        elif cfg_interp is BackgroundInterpolation.Bicubic:
+            interpolation = 'bicubic'
+
+        ax.get_xaxis().set_visible(False)
+        ax.get_yaxis().set_visible(False)
+        ax.set_facecolor(self.transparent)
+
+        def hide(key: str):
+            ax.spines[key].set_visible(False)
+
+        hide("top")
+        hide("left")
+        hide("bottom")
+        hide("right")
+
+        ax.imshow(mpimg.imread(path), aspect=aspect, alpha=self.cfg.bg_image_opacity, interpolation=interpolation, origin='upper')
 
     # Output frames
     def get_frame(self) -> ByteBuffer:

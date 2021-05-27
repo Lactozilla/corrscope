@@ -157,9 +157,6 @@ class MainWindow(QWidget):
                 with add_row(s, "", BoundLineEdit) as self.render_resolution:
                     pass
 
-                with add_row(s, "", BoundColorWidget) as self.render__bg_color:
-                    pass
-
                 with add_row(s, "", BoundColorWidget) as self.render__init_line_color:
                     pass
 
@@ -186,6 +183,33 @@ class MainWindow(QWidget):
                     name="render.grid_line_width",
                     minimum=0.5,
                     singleStep=0.5,
+                ):
+                    pass
+
+            with append_widget(
+                s, QGroupBox, title=tr("Background"), layout=QFormLayout
+            ):
+                with add_row(s, "Image", BoundLineEdit) as self.background_image:
+                    pass
+                with append_widget(s, QPushButton) as self.background_image_browse:
+                    pass
+                with add_row(s, "", BoundColorWidget) as self.render__bg_color:
+                    pass
+                with add_row(
+                    s,
+                    tr("Opacity"),
+                    BoundDoubleSpinBox,
+                    name="render.bg_image_opacity",
+                    maximum=1.0,
+                    singleStep=0.1,
+                ):
+                    pass
+                with add_row(
+                    s, tr("Aspect Ratio"), BoundComboBox, name="render.bg_image_aspect"
+                ):
+                    pass
+                with add_row(
+                    s, tr("Interpolation"), BoundComboBox, name="render.bg_image_interpolation"
                 ):
                     pass
 
@@ -502,7 +526,7 @@ class MainWindow(QWidget):
         self.amplificationL.setText(tr("Amplification"))
         self.begin_timeL.setText(tr("Begin Time"))
         self.render_resolutionL.setText(tr("Resolution"))
-        self.render__bg_colorL.setText(tr("Background"))
+        self.render__bg_colorL.setText(tr("Color"))
         self.render__init_line_colorL.setText(tr("Line Color"))
         self.render__line_widthL.setText(tr("Line Width"))
         self.render__grid_colorL.setText(tr("Grid Color"))
@@ -513,6 +537,7 @@ class MainWindow(QWidget):
         self.layout__nrowsL.setText(tr("Rows"))
 
         self.master_audio_browse.setText(tr("&Browse..."))
+        self.background_image_browse.setText(tr("&Browse..."))
         self.trigger__pitch_tracking.setText(tr("Pitch Tracking"))
 
         self.channelAdd.setText(tr("&Add..."))

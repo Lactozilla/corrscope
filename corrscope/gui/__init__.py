@@ -40,7 +40,7 @@ from corrscope.gui.view_mainwindow import MainWindow as Ui_MainWindow
 from corrscope.gui.widgets import ChannelTableView, ShortcutButton
 from corrscope.layout import Orientation, StereoOrientation
 from corrscope.outputs import IOutputConfig, FFplayOutputConfig
-from corrscope.renderer import LabelPosition
+from corrscope.renderer import LabelPosition, BackgroundAspectRatio, BackgroundInterpolation
 from corrscope.settings import paths
 from corrscope.triggers import (
     CorrelationTriggerConfig,
@@ -52,6 +52,8 @@ from corrscope.util import obj_name, iround, coalesce
 from corrscope.wave import Flatten
 
 FILTER_WAV_FILES = ["WAV files (*.wav)"]
+FILTER_IMG_FILES = ["Images (*.png *.jpg *.jpeg *.webp *.gif *.bmp);;"
+                    "PNG (*.png);;JPG (*.jpg *.jpeg);;WebP (*.webp);;GIF (*.gif);;BMP (.bmp);;All files (*.*)"]
 
 APP_NAME = f"{corrscope.app_name} {corrscope.__version__}"
 APP_DIR = Path(__file__).parent
@@ -190,6 +192,8 @@ class MainWindow(qw.QMainWindow, Ui_MainWindow):
         self.channelDown.clicked.connect(self.channel_view.on_channel_down)
         self.channelAdd.clicked.connect(self.on_channel_add)
         self.channelDelete.clicked.connect(self.on_channel_delete)
+
+        self.background_image_browse.clicked.connect(self.on_background_image_browse)
 
         # Bind actions.
         self.action_separate_render_dir.setChecked(self.pref.separate_render_dir)
@@ -408,6 +412,8 @@ class MainWindow(qw.QMainWindow, Ui_MainWindow):
     channelUp: "ShortcutButton"
     channelDown: "ShortcutButton"
 
+    background_image_browse: qw.QPushButton
+
     action_separate_render_dir: qw.QAction
     action_open_config_dir: qw.QAction
 
@@ -450,6 +456,15 @@ class MainWindow(qw.QMainWindow, Ui_MainWindow):
 
     def on_channel_delete(self):
         self.channel_view.delete_selected()
+
+    def on_background_image_browse(self):
+        name = get_open_file_name(
+            self, "Select background image", self.pref.file_dir_ref, FILTER_IMG_FILES
+        )
+        if name:
+            background_image = "background_image"
+            self.model[background_image] = name
+            self.model.update_all_bound(background_image)
 
     def on_action_save(self) -> bool:
         """
@@ -851,6 +866,7 @@ class ConfigModel(PresentationModel):
     combo_symbol_text: Dict[str, Sequence[SymbolText]] = {}
 
     master_audio = path_fix_property("master_audio")
+    background_image = path_fix_property("background_image")
 
     # Stereo flattening
     combo_symbol_text["trigger_stereo"] = list(flatten_no_stereo.items()) + [
@@ -919,6 +935,17 @@ class ConfigModel(PresentationModel):
         (LabelPosition.LeftBottom, "Bottom Left"),
         (LabelPosition.RightTop, "Top Right"),
         (LabelPosition.RightBottom, "Bottom Right"),
+    ]
+
+    combo_symbol_text["render.bg_image_aspect"] = [
+        (BackgroundAspectRatio.Equal, MainWindow.tr("Preserve", "Aspect Ratio")),
+        (BackgroundAspectRatio.Automatic, MainWindow.tr("Fit to Screen", "Aspect Ratio")),
+    ]
+
+    combo_symbol_text["render.bg_image_interpolation"] = [
+        (BackgroundInterpolation.Nearest, MainWindow.tr("Nearest Neighbor", "Interpolation")),
+        (BackgroundInterpolation.Bilinear, MainWindow.tr("Bilinear", "Interpolation")),
+        (BackgroundInterpolation.Bicubic, MainWindow.tr("Bicubic", "Interpolation")),
     ]
 
     @safe_property
